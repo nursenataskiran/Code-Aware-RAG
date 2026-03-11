@@ -51,7 +51,7 @@ class NotebookChunker(BaseChunker):
                     chunks.append(
                         Chunk(
                             project_name=project_name,
-                            file_path=file_path,
+                            file_path=str(file_path),
                             file_name=get_file_name(file_path),
                             file_type=".ipynb",
                             chunk_type=current_type,
@@ -81,7 +81,7 @@ class NotebookChunker(BaseChunker):
                     chunks.append(
                         Chunk(
                             project_name=project_name,
-                            file_path=file_path,
+                            file_path=str(file_path),
                             file_name=get_file_name(file_path),
                             file_type=".ipynb",
                             chunk_type=current_type,

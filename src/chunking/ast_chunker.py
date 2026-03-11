@@ -29,7 +29,7 @@ class ASTChunker(BaseChunker):
             return self._create_file_fallback_chunks(
                 source=source,
                 lines=lines,
-                file_path=file_path,
+                file_path=str(file_path),
                 project_name=project_name,
             )
 
@@ -39,7 +39,7 @@ class ASTChunker(BaseChunker):
                     chunks=chunks,
                     node=node,
                     lines=lines,
-                    file_path=file_path,
+                    file_path=str(file_path),
                     project_name=project_name,
                     chunk_index=chunk_index,
                     chunk_type="python_function",
@@ -50,7 +50,7 @@ class ASTChunker(BaseChunker):
                     chunks=chunks,
                     node=node,
                     lines=lines,
-                    file_path=file_path,
+                    file_path=str(file_path),
                     project_name=project_name,
                     chunk_index=chunk_index,
                     chunk_type="python_async_function",
@@ -61,7 +61,7 @@ class ASTChunker(BaseChunker):
                     chunks=chunks,
                     node=node,
                     lines=lines,
-                    file_path=file_path,
+                    file_path=str(file_path),
                     project_name=project_name,
                     chunk_index=chunk_index,
                 )
@@ -98,7 +98,7 @@ class ASTChunker(BaseChunker):
             chunks.append(
                 Chunk(
                     project_name=project_name,
-                    file_path=file_path,
+                    file_path=str(file_path),
                     file_name=get_file_name(file_path),
                     file_type=".py",
                     chunk_type=current_type,
@@ -190,7 +190,7 @@ class ASTChunker(BaseChunker):
             chunks.append(
                 Chunk(
                     project_name=project_name,
-                    file_path=file_path,
+                    file_path=str(file_path),
                     file_name=get_file_name(file_path),
                     file_type=".py",
                     chunk_type=current_type,
@@ -232,7 +232,7 @@ class ASTChunker(BaseChunker):
             chunks.append(
                 Chunk(
                     project_name=project_name,
-                    file_path=file_path,
+                    file_path=str(file_path),
                     file_name=get_file_name(file_path),
                     file_type=".py",
                     chunk_type="python_class_header",
@@ -254,7 +254,7 @@ class ASTChunker(BaseChunker):
                 chunks=chunks,
                 node=method_node,
                 lines=lines,
-                file_path=file_path,
+                file_path=str(file_path),
                 project_name=project_name,
                 chunk_index=chunk_index,
                 chunk_type=method_chunk_type,
