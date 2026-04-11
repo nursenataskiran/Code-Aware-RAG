@@ -1,3 +1,8 @@
+import sys
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).resolve().parents[2]))
+
 from src.retrieval.retriever import ChromaRetriever
 
 
@@ -15,6 +20,8 @@ def print_result(result, rank: int) -> None:
     print(f"Chunk Type: {meta.get('chunk_type')}")
     print(f"Symbol: {meta.get('symbol_name')}")
     print(f"Parent Symbol: {meta.get('parent_symbol')}")
+    print(f"Section: {meta.get('section_header')}")
+    print(f"Cell: {meta.get('cell_index')} ({meta.get('cell_type')})")
     print(f"Lines: {meta.get('start_line')} - {meta.get('end_line')}")
 
     if result.distance is not None:
@@ -28,12 +35,16 @@ def print_result(result, rank: int) -> None:
 
 
 def main() -> None:
-    retriever = ChromaRetriever()
+    try:
+        retriever = ChromaRetriever()
+    except ValueError as exc:
+        print(exc)
+        return
 
     results = retriever.retrieve(
-    query="Where is the LSTM model defined?",
-    k=5,
-    chunk_types=["notebook_code", "python_function"]
+        query="How does the project process raw F1 data before feeding it to the model?",
+        k=5,
+        chunk_types=["notebook_code", "python_function"]
     )
 
     for i, result in enumerate(results, start=1):

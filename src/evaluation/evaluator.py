@@ -43,6 +43,9 @@ def get_ragas_llm():
         openai_api_key=os.environ["OPENROUTER_API_KEY"],
         openai_api_base="https://openrouter.ai/api/v1",
         temperature=0,
+        max_tokens=1024,       # RAGAS metrics need short answers; caps cost per request
+        max_retries=3,         # retry on transient failures
+        request_timeout=60,    # seconds
     )
     return LangchainLLMWrapper(llm)
 
@@ -87,15 +90,35 @@ def load_testset(path: str) -> list[dict]:
 # BÖLÜM 3 — CUSTOM RETRİEVAL METRİKLERİ
 # ══════════════════════════════════════════════════════════════════════════════
 
-def _is_match(chunk_text: str, reference_text: str, fingerprint_len: int = 200) -> bool:
+def _tokenize_for_matching(text: str) -> set[str]:
+    """Simple tokenizer for matching: lowercase, split on non-alphanumeric."""
+    import re
+    return set(re.findall(r'[a-z0-9_]+', text.lower()))
+
+
+def _is_match(chunk_text: str, reference_text: str, threshold: float = 0.4) -> bool:
     """
     Chunk ile reference context eşleşiyor mu?
-    İlk N karakteri fingerprint olarak kullanır — tam metin karşılaştırması yapmaz
-    çünkü reference_contexts RAGAS tarafından kırpılmış/formatlanmış olabilir.
+
+    Token-overlap approach: reference text'in token'larının
+    yüzde kaçı chunk text'te bulunuyor?
+
+    Bu yöntem fingerprint'e göre daha dayanıklıdır çünkü:
+    - Sıra farklılıklarına toleranslıdır
+    - RAGAS'ın reformatlama/kırpmasına dayanıklıdır
+    - Kısmi eşleşmeleri de yakalar
     """
-    a = chunk_text.strip()[:fingerprint_len]
-    b = reference_text.strip()[:fingerprint_len]
-    return a in reference_text or b in chunk_text
+    chunk_tokens = _tokenize_for_matching(chunk_text)
+    ref_tokens = _tokenize_for_matching(reference_text)
+
+    if not ref_tokens:
+        return False
+
+    # What fraction of reference tokens appear in the chunk?
+    overlap = len(chunk_tokens & ref_tokens)
+    recall = overlap / len(ref_tokens)
+
+    return recall >= threshold
 
 
 def compute_hit_rate(
@@ -396,7 +419,7 @@ if __name__ == "__main__":
 
     run_evaluation(
         testset_path="data/evaluation/ragas_testset.jsonl",
-        version="v1.0_baseline",
+        version="v1.1_chunking_embedding",
         output_dir="eval_reports",
         k=5,
         chunk_types=None,   # tüm chunk tipleri — sonradan filtreyebilirsin

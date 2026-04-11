@@ -32,6 +32,7 @@ class MarkdownChunker(BaseChunker):
                 overlap=self.overlap,
             )
             for part in parts:
+                description = f"Markdown document: {get_file_name(file_path)} | Project: {project_name}"
                 chunks.append(
                     Chunk(
                         project_name=project_name,
@@ -41,6 +42,7 @@ class MarkdownChunker(BaseChunker):
                         chunk_type="markdown_document",
                         chunk_index=chunk_index,
                         text=part,
+                        description=description,
                     )
                 )
                 chunk_index += 1
@@ -59,6 +61,9 @@ class MarkdownChunker(BaseChunker):
 
             for part_idx, part in enumerate(parts):
                 current_type = "markdown_section" if part_idx == 0 else "markdown_section_part"
+
+                description = f"Markdown: {get_file_name(file_path)} | Project: {project_name} | Section: {header}"
+
                 chunks.append(
                     Chunk(
                         project_name=project_name,
@@ -69,9 +74,13 @@ class MarkdownChunker(BaseChunker):
                         chunk_index=chunk_index,
                         text=part,
                         section_header=header,
+                        description=description,
                     )
                 )
                 chunk_index += 1
+
+        # Filter out too-short chunks
+        chunks = [c for c in chunks if not c.is_too_short()]
 
         return chunks
 
