@@ -36,7 +36,7 @@ def run_rag_pipeline(
     k: int = 5,
     chunk_types: list[str] | None = None,
     max_per_file: int | None = 2,
-    use_hybrid: bool = False,
+    use_hybrid: bool = True,
     use_reranker: bool = False,
     use_query_expansion: bool = False,
 ) -> dict:

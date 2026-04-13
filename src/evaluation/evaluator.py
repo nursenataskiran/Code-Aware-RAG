@@ -418,8 +418,8 @@ if __name__ == "__main__":
     #   python src/evaluation/evaluator.py
 
     run_evaluation(
-        testset_path="data/evaluation/ragas_testset.jsonl",
-        version="v1.1_chunking_embedding",
+        testset_path="data/evaluation/ragas_testset_v3.jsonl",
+        version="v1.2_hybrid_search",
         output_dir="eval_reports",
         k=5,
         chunk_types=None,   # tüm chunk tipleri — sonradan filtreyebilirsin
