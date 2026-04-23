@@ -64,10 +64,10 @@ def rerank(
     scored_results = list(zip(results, scores))
     scored_results.sort(key=lambda x: x[1], reverse=True)
 
-    # Update the distance field with the cross-encoder score (higher = better)
+    # Store cross-encoder score in the dedicated field
     reranked = []
     for result, score in scored_results[:top_k]:
-        result.distance = float(-score)  # Negate so lower = better (consistent with Chroma)
+        result.reranker_score = float(score)
         reranked.append(result)
 
     return reranked

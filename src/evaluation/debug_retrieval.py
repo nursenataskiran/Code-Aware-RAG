@@ -55,6 +55,7 @@ def debug_single_question(
     # ── Vector search only ────────────────────────────────────────────
     print(f"\n{'─'*70}")
     print("🔵 VECTOR SEARCH (ChromaDB only):")
+    vector_results = []
     try:
         chroma = ChromaRetriever()
         vector_results = chroma.retrieve(query=question, k=k)
@@ -65,26 +66,25 @@ def debug_single_question(
     # ── BM25 search only ──────────────────────────────────────────────
     print(f"\n{'─'*70}")
     print("🟡 BM25 SEARCH (lexical only):")
+    bm25_results = []
     try:
         bm25 = BM25Index()
-        bm25_results_raw = bm25.search(question, k=k)
-        bm25_results = [
-            RetrievalResult(id=cid, text=text, metadata=meta, distance=None)
-            for cid, score, meta, text in bm25_results_raw
-        ]
+        bm25_results = bm25.search(question, k=k)
         _print_results(bm25_results, reference_contexts)
         
         # Show BM25 scores
         print("\n  BM25 scores:")
-        for cid, score, meta, text in bm25_results_raw[:5]:
-            symbol = meta.get("symbol_name", meta.get("section_header", ""))
-            print(f"    score={score:.3f}  {meta.get('file_name','')}  {symbol}")
+        for r in bm25_results[:5]:
+            symbol = r.metadata.get("symbol_name", r.metadata.get("section_header", ""))
+            score_val = r.bm25_score or 0.0
+            print(f"    score={score_val:.3f}  {r.metadata.get('file_name','')}  {symbol}")
     except Exception as e:
         print(f"  ❌ Error: {e}")
     
     # ── Hybrid search (full pipeline) ─────────────────────────────────
     print(f"\n{'─'*70}")
     print("🟢 HYBRID SEARCH (vector + BM25 + reranker):")
+    hybrid_results = []
     try:
         hybrid = HybridRetriever(use_reranker=True, use_query_expansion=True)
         hybrid_results = hybrid.retrieve(query=question, k=k)
@@ -97,9 +97,9 @@ def debug_single_question(
     print("📊 MATCH SUMMARY:")
     
     methods = {
-        "Vector": vector_results if 'vector_results' in dir() else [],
-        "BM25": bm25_results if 'bm25_results' in dir() else [],
-        "Hybrid": hybrid_results if 'hybrid_results' in dir() else [],
+        "Vector": vector_results,
+        "BM25": bm25_results,
+        "Hybrid": hybrid_results,
     }
     
     for name, results in methods.items():

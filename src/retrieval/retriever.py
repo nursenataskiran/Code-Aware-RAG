@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional
 import chromadb
 from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
 
-from src.embedding.vector_store_config import (
+from src.config import (
     CHROMA_PATH,
     COLLECTION_NAME,
     EMBEDDING_MODEL,
@@ -24,17 +24,22 @@ class RetrievalResult:
     id: str
     text: str
     metadata: Dict[str, Any]
-    distance: Optional[float] = None
+    distance: Optional[float] = None        # vector distance (lower = better)
+    bm25_score: Optional[float] = None      # BM25 score (higher = better)
+    reranker_score: Optional[float] = None   # cross-encoder score (higher = better)
 
     @property
     def score(self) -> Optional[float]:
         """
-        Lower distance is better in Chroma.
-        Optional helper to view a similarity-like score.
+        Best available relevance score, normalized to higher = better.
+
+        Priority: reranker_score > distance-derived > bm25_score.
         """
-        if self.distance is None:
-            return None
-        return 1 / (1 + self.distance)
+        if self.reranker_score is not None:
+            return self.reranker_score
+        if self.distance is not None:
+            return 1 / (1 + self.distance)
+        return self.bm25_score
 
 
 class ChromaRetriever:
@@ -232,15 +237,10 @@ class HybridRetriever:
         for q in queries:
             bm25_results = self.bm25_index.search(q, k=candidate_k)
             ranking = []
-            for chunk_id, score, metadata, text in bm25_results:
-                if chunk_id not in all_vector_results:
-                    all_vector_results[chunk_id] = RetrievalResult(
-                        id=chunk_id,
-                        text=text,
-                        metadata=metadata,
-                        distance=None,
-                    )
-                ranking.append(chunk_id)
+            for r in bm25_results:
+                if r.id not in all_vector_results:
+                    all_vector_results[r.id] = r
+                ranking.append(r.id)
             bm25_rankings.append(ranking)
 
         # ── Step 4: Reciprocal Rank Fusion ───────────────────────────

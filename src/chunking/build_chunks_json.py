@@ -5,9 +5,9 @@ from pathlib import Path
 from typing import List, Dict, Any
 
 from src.chunking.smart_chunker import SmartChunker
+from src.config import RAW_DATA_DIR, CHUNKS_PATH
 
-RAW_DATA_DIR = Path("data/raw")
-OUTPUT_FILE = Path("data/processed/chunks.json")
+OUTPUT_FILE = CHUNKS_PATH
 
 
 def collect_supported_files(project_dir: Path) -> List[Path]:

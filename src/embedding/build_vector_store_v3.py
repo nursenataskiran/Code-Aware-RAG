@@ -4,7 +4,7 @@ import chromadb
 from pathlib import Path
 from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
 
-from src.embedding.vector_store_config import (
+from src.config import (
     CHUNKS_PATH,
     CHROMA_PATH,
     COLLECTION_NAME,

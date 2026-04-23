@@ -1,21 +1,17 @@
-import os
-from pathlib import Path
-from dotenv import load_dotenv
+"""
+Backward-compatibility shim.
 
-load_dotenv()
+All config has moved to src.config.
+This file re-exports the old names so existing imports don't break.
+Safe to delete once all imports are verified.
+"""
 
-
-# ── Stable constants (paths, collection naming) ─────────────────────
-CHUNKS_PATH = Path("data/processed/chunks.json")
-CHROMA_PATH = Path("data/vector_db/chroma")
-COLLECTION_FAMILY = "github_projects"
-CHUNK_SCHEMA_VERSION = "v3"
-COLLECTION_NAME = f"{COLLECTION_FAMILY}_{CHUNK_SCHEMA_VERSION}"
-
-# ── Environment-driven config ────────────────────────────────────────
-EMBEDDING_MODEL = os.getenv(
-    "EMBEDDING_MODEL",
-    "sentence-transformers/all-mpnet-base-v2",
+from src.config import (  # noqa: F401
+    CHUNKS_PATH,
+    CHROMA_PATH,
+    COLLECTION_FAMILY,
+    CHUNK_SCHEMA_VERSION,
+    COLLECTION_NAME,
+    EMBEDDING_MODEL,
+    HF_TOKEN,
 )
-
-HF_TOKEN = os.getenv("HF_TOKEN")

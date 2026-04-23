@@ -1,29 +1,24 @@
 """
 RAG Evaluation Pipeline
 =======================
-Nursena Taşkıran - RAG Evaluation v1.0 Baseline
+Nursena Taşkıran - v1.2 Hybrid Search
 
-Hibrit yaklaşım:
-  - Retrieval metrikleri → Custom (deterministik, LLM gerekmez)
-  - Generation metrikleri → RAGAS (OpenRouter / gpt-4o-mini)
+Evaluates a code-aware RAG system that answers questions about
+GitHub ML projects using code and documentation.
 
-Kurulum:
-    pip install ragas langchain langchain-openai datasets
-
-Çalıştırma:
-    python src/evaluation/evaluator.py
+Approach:
+  - Retrieval metrics → Custom (deterministic, no LLM required)
+  - Generation metrics → RAGAS (OpenRouter / gpt-4o-mini)
 """
-
 import json
 import time
 import datetime
 import pandas as pd
 from pathlib import Path
 
-from src.generation.rag_pipeline import run_rag_pipeline
+from src.generation.rag_pipeline import RAGPipeline, run_rag_pipeline
 from src.retrieval.retriever import RetrievalResult
-from dotenv import load_dotenv
-load_dotenv()
+import src.config  # noqa: F401 — ensures load_dotenv() runs
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -271,6 +266,9 @@ def run_evaluation(
     print(f"\n🔍 RAG pipeline çalıştırılıyor ({len(testset)} soru, k={k})...")
     rows = []
 
+    # Pipeline'ı bir kez oluştur, tüm sorularda tekrar kullan
+    pipeline = RAGPipeline(use_hybrid=True)
+
     for i, item in enumerate(testset):
         question       = item["user_input"]
         reference_contexts = item["reference_contexts"]
@@ -278,9 +276,9 @@ def run_evaluation(
 
         print(f"  [{i+1:2}/{len(testset)}] {question[:72]}...")
 
-        # Gerçek pipeline çağrısı — run_rag_pipeline direkt kullanılıyor
-        rag_out = run_rag_pipeline(
-            query=question,
+        # Pipeline instance'ı tekrar kullanarak model yükleme süresinden tasarruf
+        rag_out = pipeline.query(
+            question=question,
             k=k,
             chunk_types=chunk_types,
         )

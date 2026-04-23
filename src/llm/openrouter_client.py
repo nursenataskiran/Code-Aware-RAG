@@ -2,15 +2,12 @@ import os
 from typing import Optional
 
 import requests
-from dotenv import load_dotenv
 
-
-load_dotenv()
-
-
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "deepseek/deepseek-chat-v3.1")
-OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+from src.config import (
+    OPENROUTER_API_KEY,
+    OPENROUTER_MODEL,
+    OPENROUTER_URL,
+)
 
 
 class OpenRouterClient:

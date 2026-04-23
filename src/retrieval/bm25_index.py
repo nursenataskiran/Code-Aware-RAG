@@ -11,11 +11,12 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 from rank_bm25 import BM25Okapi
 
-from src.embedding.vector_store_config import CHUNKS_PATH
+from src.config import CHUNKS_PATH
+from src.retrieval.retriever import RetrievalResult
 
 
 def _code_aware_tokenize(text: str) -> List[str]:
@@ -87,12 +88,12 @@ class BM25Index:
         self,
         query: str,
         k: int = 20,
-    ) -> List[Tuple[str, float, Dict[str, Any], str]]:
+    ) -> List[RetrievalResult]:
         """
         Search the BM25 index.
 
         Returns:
-            List of (chunk_id, bm25_score, metadata, text) tuples,
+            List of RetrievalResult objects with bm25_score set,
             sorted by score descending.
         """
         if self.bm25 is None:
@@ -113,11 +114,11 @@ class BM25Index:
             if scores[idx] <= 0:
                 continue
             chunk = self.chunks[idx]
-            results.append((
-                chunk["id"],
-                float(scores[idx]),
-                chunk.get("metadata", {}),
-                chunk.get("text", ""),
+            results.append(RetrievalResult(
+                id=chunk["id"],
+                text=chunk.get("text", ""),
+                metadata=chunk.get("metadata", {}),
+                bm25_score=float(scores[idx]),
             ))
 
         return results
