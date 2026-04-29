@@ -31,6 +31,7 @@ This project focuses on bridging that gap with a **structure-aware RAG pipeline*
 - **Semantic chunk descriptions** to improve embedding quality
 - **Code-aware query expansion** (NL → code terms)
 - **Evaluation pipeline** with custom retrieval metrics + RAGAS
+- **FastAPI-based API layer** (chat endpoint, health checks, rate limiting, structured responses)
 
 ---
 
@@ -154,8 +155,25 @@ Retrieved chunks are formatted with metadata (file, symbol, lines) before being 
 - Low temperature (0.2) for consistency
 
 ---
+## 🌐 API Layer
 
-### Evaluation
+The RAG system is exposed via a lightweight FastAPI backend for programmatic access.
+
+### Endpoints
+
+- `GET /health` → Service health check
+- `POST /api/v1/chat` → Ask questions about the indexed repositories
+
+### Features
+
+- Stateless chat endpoint powered by the RAG pipeline
+- Structured request/response schemas using Pydantic
+- Built-in rate limiting to prevent abuse
+- Centralised error handling with clean API responses
+- Lazy initialisation of the RAG pipeline for faster startup
+
+
+## Evaluation
 
 The system evaluates both retrieval and generation quality.
 
@@ -227,24 +245,24 @@ The system was developed through multiple iterations, focusing on improving both
 
 ### v1.2 → Hybrid Retrieval (Current)
 
-- Introduced **hybrid search** (vector + BM25)  
-- Added **query expansion** (NL → code terms)  
-- Implemented **Reciprocal Rank Fusion (RRF)**  
-- Added optional **cross-encoder re-ranking**  
-- Tested multiple LLMs and selected best-performing setup  
-  - **Evaluation LLM:** `openai/gpt-4o-mini`  
+- Introduced hybrid search (ChromaDB vector search + BM25)
+- Combined semantic and lexical rankings using Reciprocal Rank Fusion (RRF)
+- Implemented optional query expansion and cross-encoder re-ranking
+- Disabled query expansion and re-ranking by default after evaluation showed better recall and generation quality with the simpler hybrid setup
+- Evaluation LLM: `openai/gpt-4o-mini`
 
 **Results:**
+
 - Hit Rate: **0.83**
-- Context Precision: **0.19**  
-- Context Recall: **0.72**  
-- MRR: **0.46**  
+- Context Precision: **0.21**
+- Context Recall: **0.72**
+- MRR: **0.45**
 
-
-- Faithfulness: **0.82**  
-- Answer Relevancy: **0.73**  
-- Answer Correctness: **0.68** 
-
+  
+- Faithfulness: **0.75**
+- Answer Relevancy: **0.68**
+- Answer Correctness: **0.67**
+> Note: Query expansion and cross-encoder re-ranking are implemented as optional features. However, evaluation showed that the simpler hybrid setup (ChromaDB + BM25 + RRF) performs better on the current test set, so both are disabled by default.
 ---
 
 ### Key Takeaways
