@@ -25,13 +25,18 @@ This project focuses on bridging that gap with a **structure-aware RAG pipeline*
 
 ## ⚙️ Key Features
 
-- **AST-based chunking for Python** (functions, classes, methods)
-- **Markdown & notebook-aware parsing** (sections + cell-level context)
-- **Hybrid retrieval** (vector search + BM25 with RRF)
-- **Semantic chunk descriptions** to improve embedding quality
-- **Code-aware query expansion** (NL → code terms)
-- **Evaluation pipeline** with custom retrieval metrics + RAGAS
-- **FastAPI-based API layer** (chat endpoint, health checks, rate limiting, structured responses)
+* **AST-based chunking for Python** (functions, classes, methods)
+* **Markdown & notebook-aware parsing** (sections + cell-level context)
+* **Hybrid retrieval** (vector search + BM25 with RRF)
+* **Semantic chunk descriptions** to improve embedding quality
+* **Code-aware query expansion** (NL → code terms)
+* **Optional cross-encoder re-ranking**
+* **Persistent ChromaDB storage** across application restarts
+* **Public GitHub repository ingestion** through the GitHub API
+* **Evaluation pipeline** with custom retrieval metrics + RAGAS
+* **FastAPI-based API layer** (chat endpoint, ingestion endpoint, health checks, rate limiting, structured responses)
+* **Docker & Docker Compose support** for reproducible local deployment
+
 
 ---
 
@@ -157,20 +162,48 @@ Retrieved chunks are formatted with metadata (file, symbol, lines) before being 
 ---
 ## 🌐 API Layer
 
-The RAG system is exposed via a lightweight FastAPI backend for programmatic access.
+The RAG system is exposed through a lightweight **FastAPI** backend for programmatic access.
 
 ### Endpoints
 
-- `GET /health` → Service health check
-- `POST /api/v1/chat` → Ask questions about the indexed repositories
+* **`GET /health`** → Returns the current service status
+* **`POST /api/v1/chat`** → Answers questions using the indexed repository context
+* **`POST /api/v1/ingest/github`** → Downloads, chunks, and indexes a public GitHub repository
 
-### Features
+### Repository Ingestion
 
-- Stateless chat endpoint powered by the RAG pipeline
-- Structured request/response schemas using Pydantic
-- Built-in rate limiting to prevent abuse
-- Centralised error handling with clean API responses
-- Lazy initialisation of the RAG pipeline for faster startup
+The ingestion endpoint accepts a public GitHub repository URL and:
+
+* **Downloads supported source files** (`.py`, `.md`, `.ipynb`)
+* **Stores files under a project-specific directory**
+* **Processes files with the structure-aware chunking pipeline**
+* **Adds generated chunks to the persistent ChromaDB collection**
+* **Returns downloaded and skipped files in a structured response**
+* **Detects already-indexed repositories** and avoids unnecessary re-downloading or re-indexing
+
+### API Features
+
+* **Pydantic request and response schemas**
+* **Structured source metadata** in chat responses
+* **Built-in rate limiting** for chat requests
+* **Centralized validation and exception handling**
+* **Lazy initialization of the RAG pipeline**
+* **Persistent ChromaDB usage** across application restarts
+* **Swagger UI documentation** available at `/docs`
+* **ReDoc documentation** available at `/redoc`
+
+
+## 🐳 Docker Deployment
+
+The application can be run using **Docker** and **Docker Compose**, without installing the Python dependencies directly on the host machine.
+
+The Docker setup includes:
+
+* **FastAPI served with Uvicorn**
+* **Environment variables loaded from a local `.env` file**
+* **Port mapping** for accessing the API from the host machine
+* **Persistent ChromaDB storage** through a mounted volume
+* **A reproducible Python environment** based on the project dependencies
 
 
 ## Evaluation
@@ -265,25 +298,66 @@ The system was developed through multiple iterations, focusing on improving both
 > Note: Query expansion and cross-encoder re-ranking are implemented as optional features. However, evaluation showed that the simpler hybrid setup (ChromaDB + BM25 + RRF) performs better on the current test set, so both are disabled by default.
 ---
 
+---
+
+### v1.3 → Multi-Repository Ingestion, Improved Chunking & Final Evaluation
+
+* **Added public GitHub repository ingestion**
+* **Expanded the corpus to three machine learning repositories**
+* **Added persistent ChromaDB storage** to preserve indexed repositories across restarts
+* **Improved Python, Markdown, and notebook chunk generation**
+* **Added semantic descriptions and richer metadata to embedding inputs**
+* **Reviewed and updated the evaluation dataset** to match the final chunk structure
+* **Added project-aware filtering for repository-specific evaluation questions**
+* **Added a FastAPI backend** with chat, ingestion, health-check, rate-limiting, and structured error handling
+* **Added Docker and Docker Compose support**
+* **Used top-5 retrieval (`k=5`)**
+* **Evaluation LLM: `openai/gpt-4o-mini`**
+
+Results:
+
+* **Hit Rate: 0.8696**
+* **Context Precision: 0.2174**
+* **Context Recall: 0.8261**
+* **MRR: 0.6232**
+* **Faithfulness: 0.8727**
+* **Answer Relevancy: 0.8849**
+* **Answer Correctness: 0.6814**
+
+The final configuration uses **ChromaDB semantic retrieval + BM25 lexical retrieval + Reciprocal Rank Fusion**.
+
+Query expansion and cross-encoder re-ranking remain available as optional features. However, they are disabled by default because the simpler hybrid configuration produced the most balanced retrieval and generation results on the final evaluation set.
+
+---
+
 ### Key Takeaways
 
-- Retrieval quality had the biggest impact on overall performance  
-- Pure vector search was not sufficient for code understanding  
-- Hybrid retrieval significantly improved recall  
-- LLM choice mattered, but only after fixing retrieval
-
----
-## 🚧 Limitations
-
-- Evaluated on a relatively small corpus (limited number of projects and chunks)
-- Context precision is still low (~0.19), meaning some irrelevant chunks are retrieved
-- Query expansion is rule-based and not learned from data
-- No production interface (API or UI) yet
+* **Retrieval quality had the biggest impact on overall performance**
+* **Pure vector search was not sufficient for code understanding**
+* **BM25 improved retrieval of exact identifiers, function names, and configuration values**
+* **Semantic search performed better for conceptual and natural-language questions**
+* **Hybrid retrieval significantly improved context coverage**
+* **Structure-aware chunking produced more meaningful retrieval units than flat text splitting**
+* **Accurate and up-to-date reference contexts were essential for reliable evaluation**
+* **The simpler hybrid pipeline performed better than enabling every optional retrieval component**
+* **Persistent storage and Docker support made the system easier to run and reuse**
 
 ---
 
-## 🔮 Future Work
+## ⚠️ Limitations
 
-- Add a lightweight API layer for programmatic access
-- Build a simple UI for interactive querying
-- Improve retrieval precision with better filtering / ranking strategies
+* **The system was evaluated on a relatively small corpus** of three machine learning repositories and 23 reviewed questions
+* **Context precision remains lower than context recall**, because top-k retrieval may include supporting or partially related chunks
+* **Only Python, Markdown, and Jupyter Notebook files are currently supported**
+* **GitHub ingestion currently supports public repositories**
+* **Query expansion is rule-based** rather than learned from repository-specific data
+* **The FastAPI backend is stateless** and does not maintain conversational history between requests
+
+---
+
+## 🔭 Future Work
+
+* **Add authentication and private repository ingestion**
+* **Evaluate the system on a larger and more diverse repository corpus**
+* **Add conversational memory for multi-turn repository questions**
+
