@@ -17,14 +17,17 @@ from typing import List
 # Maps common query terms to project_name values in the vector store.
 # Extend this as you add more projects.
 PROJECT_ALIASES = {
-    "f1": "Formula1_Race_Prediction",
-    "formula 1": "Formula1_Race_Prediction",
-    "formula1": "Formula1_Race_Prediction",
-    "race prediction": "Formula1_Race_Prediction",
-    "race": "Formula1_Race_Prediction",
-    "stress": "Human_Stress_Prediction",
-    "human stress": "Human_Stress_Prediction",
-    "stress prediction": "Human_Stress_Prediction",
+    "f1": "nursenataskiran__Formula1_Race_Result_Prediction",
+    "formula 1": "nursenataskiran__Formula1_Race_Result_Prediction",
+    "formula1": "nursenataskiran__Formula1_Race_Result_Prediction",
+    "race prediction": "nursenataskiran__Formula1_Race_Result_Prediction",
+    "race": "nursenataskiran__Formula1_Race_Result_Prediction",
+    "stress": "nursenataskiran__Human-Stress-Prediction",
+    "human stress": "nursenataskiran__Human-Stress-Prediction",
+    "stress prediction": "nursenataskiran__Human-Stress-Prediction",
+    "menstrual": "nursenataskiran__Menstrual-Cycle-Forecasting",
+    "menstrual cycle": "nursenataskiran__Menstrual-Cycle-Forecasting",
+    "cycle forecasting": "nursenataskiran__Menstrual-Cycle-Forecasting",
 }
 
 # ── Code vocabulary ──────────────────────────────────────────────────

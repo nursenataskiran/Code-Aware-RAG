@@ -13,11 +13,24 @@ Approach:
 import json
 import time
 import datetime
+import sys
 import pandas as pd
 from pathlib import Path
 
-from src.generation.rag_pipeline import RAGPipeline, run_rag_pipeline
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+
+from src.generation.context_builder import build_context
+from src.generation.rag_pipeline import RAGPipeline, build_prompt
 from src.retrieval.retriever import RetrievalResult
+from src.config import (  # noqa: E402
+    COLLECTION_NAME,
+    EVAL_REPORTS_DIR,
+    EVAL_TESTSET_PATH,
+    RAGAS_LLM_MODEL,
+)
 import src.config  # noqa: F401 — ensures load_dotenv() runs
 
 
@@ -27,14 +40,15 @@ import src.config  # noqa: F401 — ensures load_dotenv() runs
 
 def get_ragas_llm():
     """
-    RAGAS için OpenRouter üzerinden gpt-4o-mini bağlantısı.
+    RAGAS için OpenRouter üzerinden LLM bağlantısı.
+    Model, RAGAS_LLM_MODEL config değişkeninden okunur (varsayılan: gpt-4o-mini).
     """
     from langchain_openai import ChatOpenAI
     from ragas.llms import LangchainLLMWrapper
 
     import os
     llm = ChatOpenAI(
-        model="openai/gpt-4o-mini",
+        model=RAGAS_LLM_MODEL,
         openai_api_key=os.environ["OPENROUTER_API_KEY"],
         openai_api_base="https://openrouter.ai/api/v1",
         temperature=0,
@@ -273,18 +287,30 @@ def run_evaluation(
         question       = item["user_input"]
         reference_contexts = item["reference_contexts"]
         ground_truth   = item["reference"]
+        project_name   = item.get("project_name")
 
         print(f"  [{i+1:2}/{len(testset)}] {question[:72]}...")
 
-        # Pipeline instance'ı tekrar kullanarak model yükleme süresinden tasarruf
-        rag_out = pipeline.query(
-            question=question,
-            k=k,
-            chunk_types=chunk_types,
-        )
-
-        results: list[RetrievalResult] = rag_out["results"]
-        answer: str = rag_out["answer"]
+        # Keep runtime RAGPipeline untouched. Evaluation can add a project-level
+        # retriever filter when the testset item provides project_name.
+        if project_name:
+            results = pipeline.retriever.retrieve(
+                query=question,
+                k=k,
+                where={"project_name": project_name},
+                chunk_types=chunk_types,
+                max_per_file=2,
+            )
+            context = build_context(results)
+            answer = pipeline.llm.generate(build_prompt(question, context))
+        else:
+            rag_out = pipeline.query(
+                question=question,
+                k=k,
+                chunk_types=chunk_types,
+            )
+            results: list[RetrievalResult] = rag_out["results"]
+            answer: str = rag_out["answer"]
 
         # Retrieval metrikleri — RetrievalResult listesi direkt geçiyor
         retrieval_scores = compute_retrieval_metrics(results, reference_contexts)
@@ -292,6 +318,7 @@ def run_evaluation(
         rows.append({
             "question":           question,
             "ground_truth":       ground_truth,
+            "project_name":       project_name,
             "answer":             answer,
             # RAGAS için chunk metinleri list[str] olarak
             "retrieved_texts":    [r.text for r in results],
@@ -332,12 +359,13 @@ def run_evaluation(
         "version":       version,
         "timestamp":     timestamp,
         "testset_path":  testset_path,
+        "collection_name": COLLECTION_NAME,
         "k":             k,
         "chunk_types":   chunk_types,
         "num_questions": len(testset),
         "summary":       summary,
         "per_question":  df[[
-            "question", "answer", "ground_truth", "synthesizer",
+            "question", "answer", "ground_truth", "project_name", "synthesizer",
             *[c for c in metric_cols if c in df.columns],
         ]].to_dict(orient="records"),
     }
@@ -347,6 +375,7 @@ def run_evaluation(
 
     df[[
         "question",
+        "project_name",
         *[c for c in metric_cols if c in df.columns],
         "synthesizer",
     ]].to_csv(csv_path, index=False)
@@ -416,9 +445,9 @@ if __name__ == "__main__":
     #   python src/evaluation/evaluator.py
 
     run_evaluation(
-        testset_path="data/evaluation/ragas_testset_v3.jsonl",
-        version="v1.2_hybrid_search",
-        output_dir="eval_reports",
+        testset_path=str(EVAL_TESTSET_PATH),
+        version="v1.3_hybrid_search_v4_index",
+        output_dir=str(EVAL_REPORTS_DIR),
         k=5,
         chunk_types=None,   # tüm chunk tipleri — sonradan filtreyebilirsin
     )

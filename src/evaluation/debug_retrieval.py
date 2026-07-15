@@ -21,6 +21,7 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
+from src.config import EVAL_TESTSET_PATH, USE_RERANKER, USE_QUERY_EXPANSION
 from src.retrieval.retriever import ChromaRetriever, HybridRetriever, RetrievalResult
 from src.retrieval.bm25_index import BM25Index
 from src.evaluation.evaluator import _is_match
@@ -81,12 +82,13 @@ def debug_single_question(
     except Exception as e:
         print(f"  ❌ Error: {e}")
     
-    # ── Hybrid search (full pipeline) ─────────────────────────────────
+    # ── Hybrid search (full pipeline) ────────────────────────────────────
     print(f"\n{'─'*70}")
-    print("🟢 HYBRID SEARCH (vector + BM25 + reranker):")
+    # Mirrors the exact flags used by RAGPipeline and the evaluator
+    print(f"🟢 HYBRID SEARCH (reranker={USE_RERANKER}, query_expansion={USE_QUERY_EXPANSION}):")
     hybrid_results = []
     try:
-        hybrid = HybridRetriever(use_reranker=True, use_query_expansion=True)
+        hybrid = HybridRetriever(use_reranker=USE_RERANKER, use_query_expansion=USE_QUERY_EXPANSION)
         hybrid_results = hybrid.retrieve(query=question, k=k)
         _print_results(hybrid_results, reference_contexts)
     except Exception as e:
@@ -143,12 +145,13 @@ def _print_results(
 
 
 def main():
-    testset_path = "data/evaluation/ragas_testset.jsonl"
-    
+    testset_path = str(EVAL_TESTSET_PATH)
+
     if not Path(testset_path).exists():
-        print(f"❌ Testset not found: {testset_path}")
-        print("\nRunning with a sample question instead...\n")
-        
+        print(f"\u26a0\ufe0f  Testset not found: {testset_path}")
+        print("    Update EVAL_TESTSET_PATH in src/config.py if the file has moved.")
+        print("\nFalling back to a hardcoded sample question...\n")
+
         debug_single_question(
             question="How does the project process raw F1 data before feeding it to the model?",
             reference_contexts=[

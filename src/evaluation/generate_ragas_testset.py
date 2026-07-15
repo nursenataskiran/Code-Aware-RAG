@@ -21,7 +21,7 @@ load_dotenv()
 # -------------------------------------------------------------------
 # Paths
 # -------------------------------------------------------------------
-CHUNKS_PATH = Path("data/processed/chunks.json")
+from src.config import CHUNKS_PATH  # single source of truth — never silently stale
 OUTPUT_DIR = Path("data/evaluation")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -60,7 +60,7 @@ def load_chunks(path: Path) -> List[Dict[str, Any]]:
         data = json.load(f)
 
     if not isinstance(data, list):
-        raise ValueError("chunks.json must contain a list")
+        raise ValueError(f"Chunk file must contain a list: {CHUNKS_PATH}")
 
     return data
 
@@ -177,7 +177,7 @@ def main():
     chunks = load_chunks(CHUNKS_PATH)
 
     if not chunks:
-        raise ValueError("chunks.json is empty")
+        raise ValueError(f"No chunks found in {CHUNKS_PATH}")
 
     print("Building documents...")
     documents = build_documents(chunks)

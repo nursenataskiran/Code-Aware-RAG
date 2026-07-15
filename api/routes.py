@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from api.rate_limiter import rate_limit_dependency
 from api.schemas import ChatRequest, ChatResponse, HealthResponse, SourceItem
 from src.generation.rag_pipeline import RAGPipeline
+from src.config import USE_RERANKER, USE_QUERY_EXPANSION
 
 logger = logging.getLogger(__name__)
 
@@ -24,8 +25,8 @@ def _get_pipeline() -> RAGPipeline:
         logger.info("Initialising RAG pipeline (first request)...")
         _pipeline = RAGPipeline(
             use_hybrid=True,
-            use_reranker=False,        # Keep startup fast; enable if needed
-            use_query_expansion=False, # Same — cheap to turn on later
+            use_reranker=USE_RERANKER,       # controlled via USE_RERANKER in .env
+            use_query_expansion=USE_QUERY_EXPANSION,  # controlled via USE_QUERY_EXPANSION in .env
         )
         logger.info("RAG pipeline ready.")
     return _pipeline

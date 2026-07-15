@@ -7,6 +7,7 @@ from fastapi import FastAPI
 
 from api.errors import register_error_handlers
 from api.routes import chat_router, health_router
+from api.ingestion_routes import ingestion_router
 
 
 def _configure_logging() -> None:
@@ -49,6 +50,7 @@ def create_app() -> FastAPI:
     # Register routes
     app.include_router(health_router)
     app.include_router(chat_router)
+    app.include_router(ingestion_router)
 
     # Register error handlers
     register_error_handlers(app)

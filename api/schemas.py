@@ -50,3 +50,45 @@ class HealthResponse(BaseModel):
 class ErrorResponse(BaseModel):
     detail: str
     code: Optional[str] = None
+
+
+# ── GitHub Ingestion ──────────────────────────────────────────────────
+
+class SkippedFile(BaseModel):
+    """A single file that was skipped during ingestion, with a reason."""
+
+    path: str
+    reason: str
+
+
+class GitHubIngestRequest(BaseModel):
+    repo_url: str = Field(
+        ...,
+        description="Public GitHub repository URL.",
+        examples=["https://github.com/owner/repo"],
+    )
+
+
+class GitHubIngestResponse(BaseModel):
+    status: str = Field(
+        ...,
+        description="'success' or 'already_ingested'.",
+    )
+    project_name: str = Field(
+        ...,
+        description="Normalised local name (owner__repo).",
+    )
+    repo_url: str
+    downloaded_files: List[str] = Field(
+        default_factory=list,
+        description="Relative paths of files written to data/raw/.",
+    )
+    skipped_files: List[SkippedFile] = Field(
+        default_factory=list,
+        description="Files that were not downloaded and the reason why.",
+    )
+    indexed_chunks: int = Field(
+        default=0,
+        description="Number of chunks added to the Chroma collection.",
+    )
+    message: str

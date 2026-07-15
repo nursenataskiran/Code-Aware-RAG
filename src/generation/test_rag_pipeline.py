@@ -10,7 +10,7 @@ from src.retrieval.retriever import RetrievalResult
 
 
 def main() -> None:
-    query = "Show me all files"
+    query = "Tell me the LSTM parameters"
     sample_results = [
         RetrievalResult(
             id="demo_chunk",

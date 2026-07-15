@@ -12,6 +12,8 @@ from src.config import (
     COLLECTION_NAME,
     EMBEDDING_MODEL,
     HF_TOKEN,
+    USE_RERANKER,
+    USE_QUERY_EXPANSION,
 )
 
 # Ensure HF_TOKEN is available for model downloads at query time
@@ -171,8 +173,8 @@ class HybridRetriever:
 
     def __init__(
         self,
-        use_reranker: bool = True,
-        use_query_expansion: bool = True,
+        use_reranker: bool = USE_RERANKER,
+        use_query_expansion: bool = USE_QUERY_EXPANSION,
     ) -> None:
         self.chroma_retriever = ChromaRetriever()
         self.use_reranker = use_reranker

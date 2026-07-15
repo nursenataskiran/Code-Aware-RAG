@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional
 from src.retrieval.retriever import ChromaRetriever, HybridRetriever
 from src.generation.context_builder import build_context
 from src.llm.openrouter_client import OpenRouterClient
+from src.config import USE_RERANKER, USE_QUERY_EXPANSION
 
 
 PROMPT_TEMPLATE = """
@@ -46,8 +47,8 @@ class RAGPipeline:
     def __init__(
         self,
         use_hybrid: bool = True,
-        use_reranker: bool = False,
-        use_query_expansion: bool = False,
+        use_reranker: bool = USE_RERANKER,
+        use_query_expansion: bool = USE_QUERY_EXPANSION,
     ) -> None:
         if use_hybrid:
             self.retriever = HybridRetriever(
@@ -96,8 +97,8 @@ def run_rag_pipeline(
     chunk_types: list[str] | None = None,
     max_per_file: int | None = 2,
     use_hybrid: bool = True,
-    use_reranker: bool = False,
-    use_query_expansion: bool = False,
+    use_reranker: bool = USE_RERANKER,
+    use_query_expansion: bool = USE_QUERY_EXPANSION,
 ) -> dict:
     """
     Backward-compatible wrapper around RAGPipeline.
