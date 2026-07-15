@@ -42,64 +42,89 @@ This project focuses on bridging that gap with a **structure-aware RAG pipeline*
 
 ## 🏗️ Architecture
 
+```text
+                    User Question
+                         │
+                         ▼
+       ┌─────────────────────────────────┐
+       │     Optional Query Expansion    │
+       │   Natural language → code terms │
+       └────────────────┬────────────────┘
+                        │
+             ┌──────────┴──────────┐
+             ▼                     ▼
+      ┌──────────────┐      ┌──────────────┐
+      │ Vector Search│      │ BM25 Search  │
+      │  ChromaDB    │      │  rank_bm25   │
+      └──────┬───────┘      └──────┬───────┘
+             │                     │
+             └──────────┬──────────┘
+                        ▼
+             ┌─────────────────────┐
+             │ Reciprocal Rank     │
+             │ Fusion — RRF        │
+             └──────────┬──────────┘
+                        │
+                        ▼
+             ┌─────────────────────┐
+             │ Optional            │
+             │ Cross-Encoder       │
+             │ Re-ranking          │
+             └──────────┬──────────┘
+                        │
+                        ▼
+             ┌─────────────────────┐
+             │ Context Builder     │
+             │ Metadata + text     │
+             └──────────┬──────────┘
+                        │
+                        ▼
+             ┌─────────────────────┐
+             │ LLM Generation      │
+             │ OpenRouter          │
+             └──────────┬──────────┘
+                        │
+                        ▼
+                     Answer
 ```
-                User Question
-                     │
-                     ▼
-┌─────────────────────────────────────────────────┐
-│              Query Expansion                     │
-│  (code vocabulary mapping, project detection)    │
-└─────────────────────┬───────────────────────────┘
-                      │
-          ┌───────────┴───────────┐
-          ▼                       ▼
-   ┌─────────────┐       ┌──────────────┐
-   │ Vector Search│       │ BM25 Search  │
-   │  (ChromaDB)  │       │ (rank_bm25)  │
-   └──────┬──────┘       └──────┬───────┘
-          │                     │
-          └──────────┬──────────┘
-                     ▼
-          ┌─────────────────────┐
-          │ Reciprocal Rank     │
-          │ Fusion (RRF)        │
-          └──────────┬──────────┘
-                     ▼
-          ┌─────────────────────┐
-          │ Cross-Encoder       │
-          │ Re-ranking          │
-          └──────────┬──────────┘
-                     ▼
-          ┌─────────────────────┐
-          │ Context Builder     │
-          │ (metadata + text)   │
-          └──────────┬──────────┘
-                     ▼
-          ┌─────────────────────┐
-          │ LLM Generation      │
-          │ (OpenRouter)        │
-          └──────────┬──────────┘
-                     ▼
-                  Answer
-```
+
+Query expansion and cross-encoder re-ranking are implemented as **optional components**. They are disabled by default in the final configuration because the simpler **ChromaDB + BM25 + RRF** pipeline produced the most balanced performance on the final evaluation set.
+
 ---
 ## 📂 Project Structure
-The project is organized into modular components for chunking, retrieval, generation, and evaluation.
-```bash
+
+The project is organized into modular components for ingestion, chunking, retrieval, generation, evaluation, and API access.
+
+```text
+api/
+ ├── app.py                 # FastAPI application
+ ├── routes.py              # Chat and health endpoints
+ ├── ingestion_routes.py    # GitHub repository ingestion endpoint
+ ├── schemas.py             # Pydantic request/response models
+ ├── rate_limiter.py        # In-memory API rate limiting
+ └── errors.py              # Centralized error handlers
+
 src/
- ├── chunking/        # AST, Markdown, Notebook-based chunking
- ├── embedding/       # Vector store construction (ChromaDB)
- ├── retrieval/       # Hybrid search, BM25, reranking
- ├── generation/      # RAG pipeline & context building
- ├── evaluation/      # Metrics & evaluation pipeline
- ├── llm/             # OpenRouter client
+ ├── chunking/              # AST, Markdown, and notebook chunking
+ ├── embedding/             # ChromaDB vector-store construction
+ ├── retrieval/             # Semantic search, BM25, RRF, and reranking
+ ├── generation/            # RAG pipeline, context building, and experimental LangGraph workflow
+ ├── ingestion/             # GitHub downloading and repository indexing
+ ├── evaluation/            # Retrieval and RAGAS evaluation pipeline
+ ├── llm/                   # OpenRouter client
+ └── config.py              # Paths, models, and feature flags
 
 data/
- ├── raw/             # Source repositories
- ├── processed/       # Chunked data (JSON)
- ├── vector_db/       # ChromaDB storage
+ ├── raw/                   # Downloaded repository files
+ ├── processed/             # Generated chunks
+ ├── evaluation/            # Evaluation test set
+ └── vector_db/             # Persistent ChromaDB storage
 
-eval_reports/         # Evaluation results (JSON / CSV)
+Dockerfile
+docker-compose.yml
+requirements.txt
+requirements-dev.txt
+eval_reports/               # Versioned evaluation outputs
 ```
 ---
 ## 🔄 How the System Works
@@ -276,7 +301,7 @@ The system was developed through multiple iterations, focusing on improving both
 
 ---
 
-### v1.2 → Hybrid Retrieval (Current)
+### v1.2 → Hybrid Retrieval
 
 - Introduced hybrid search (ChromaDB vector search + BM25)
 - Combined semantic and lexical rankings using Reciprocal Rank Fusion (RRF)
@@ -300,13 +325,14 @@ The system was developed through multiple iterations, focusing on improving both
 
 ---
 
-### v1.3 → Multi-Repository Ingestion, Improved Chunking & Final Evaluation
+### v1.3 → Multi-Repository Ingestion, Improved Chunking & Final Evaluation (Current)
 
 * **Added public GitHub repository ingestion**
 * **Expanded the corpus to three machine learning repositories**
 * **Added persistent ChromaDB storage** to preserve indexed repositories across restarts
 * **Improved Python, Markdown, and notebook chunk generation**
 * **Added semantic descriptions and richer metadata to embedding inputs**
+* **Added an experimental LangGraph workflow** with an LLM-based answer judge and bounded retry mechanism
 * **Reviewed and updated the evaluation dataset** to match the final chunk structure
 * **Added project-aware filtering for repository-specific evaluation questions**
 * **Added a FastAPI backend** with chat, ingestion, health-check, rate-limiting, and structured error handling
